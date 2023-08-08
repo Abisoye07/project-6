@@ -8,6 +8,7 @@
 As a DevOps engineer, your deep understanding of core components of web solutions and ability to troubleshoot them will play essential role in your further progress and development.
 
 ## Three-tier Architecture
+
 Generally, web, or mobile solutions are implemented based on what is called the Three-tier Architecture.
 Three-tier Architecture is a client-server software architecture pattern that comprise of 3 separate layers.
 
@@ -52,7 +53,7 @@ Open up the Linux terminal to begin configuration
 
 ## Use lsblk command to inspect what block devices are attached to the server. Notice names of your newly created devices. All devices in Linux reside in /dev/ directory. Inspect it with ls /dev/ and make sure you see all 3 newly created block devices there – their names will likely be xvdf, xvdh, xvdg.
 
-
+![web-server](./images/webvol-1.png)
 Use df -h command to see all mounts and free space on your server
 
 Use gdisk utility to create a single partition on each of the 3 disks
@@ -67,6 +68,7 @@ BSD: not present
 APM: not present
 GPT: not present
 
+![logical vol](./images/web-vol2.png)
 ## Creating new GPT entries.
 
 Command (? for help branch segun-edits: p
@@ -84,6 +86,8 @@ Number Start (sector) End (sector) Size Code Name
 
 Command (? for help): w
 
+
+![web-bvol](./images/web-vol3.png)
 ## Final checks complete. About to write GPT data. THIS WILL OVERWRITE EXISTING
 PARTITIONS!!
 
@@ -97,10 +101,14 @@ Use lsblk utility to view the newly configured partition on each of the 3 disks.
 Install lvm2 package using sudo yum install lvm2. Run sudo lvmdiskscan command to check for available partitions.
 Note: Previously, in Ubuntu we used apt command to install packages, in RedHat/CentOS a different package manager is used, so we shall use yum command instead.
 
+![install-lvm](./images/database-lvm%20installed.png)
+
 Use pvcreate utility to mark each of 3 disks as physical volumes (PVs) to be used by LVM
 sudo pvcreate /dev/xvdf1
 sudo pvcreate /dev/xvdg1
 sudo pvcreate /dev/xvdh1
+
+![partitions](./images/database-partition.png)
 
 ## Verify that your Physical volume has been created successfully by running sudo pvs
 
@@ -119,6 +127,7 @@ Verify the entire setup
 sudo vgdisplay -v #view complete setup - VG, PV, and LV
 sudo lsblk
 
+![vol create](./images/pyhsicalvolume-web.png)
 
 Use mkfs.ext4 to format the logical volumes with ext4 filesystem
 sudo mkfs -t ext4 /dev/webdata-vg/apps-lv
@@ -161,6 +170,8 @@ Update /etc/fstab in this format using your own UUID and rememeber to remove the
 sudo mount -a
 sudo systemctl daemon-reload
 
+![daemon reload](./images/daemon-reload.png)
+
 Verify your setup by running df -h, output must look like this:
 
 ## PREPARE THE DATABASE SERVER
@@ -170,9 +181,14 @@ Step 2 — Prepare the Database Server
 Launch a second RedHat EC2 instance that will have a role – ‘DB Server’
 Repeat the same steps as for the Web Server, but instead of apps-lv create db-lv and mount it to /db directory instead of /var/www/html/.
 
+![physical vol create](./images/pyhsicalvolume-web.png)
+![mount point](./images/mount%20point.png)
+![database mount](./images/mount-database.png)
 Step 3 — Install WordPress on your Web Server EC2
 Update the repository
 sudo yum -y update
+
+![web-datapage](./images/webserver-datatbases.png)
 
 Install wget, Apache and it’s dependencies
 sudo yum -y install wget httpd php php-mysqlnd php-fpm php-json
@@ -193,6 +209,8 @@ setsebool -P httpd_execmem 1
 Restart Apache
 sudo systemctl restart httpd
 
+![alt text](image.jpg)
+
 ## Download wordpress and copy wordpress to var/www/html
   mkdir wordpress
   cd   wordpress
@@ -210,6 +228,8 @@ sudo yum update
 sudo yum install mysql-server
 Verify that the service is up and running by using sudo systemctl status mysqld, if it is not running, restart the service and enable it so it will be running even after reboot:
 
+![alt text](image.jpg)
+
 sudo systemctl restart mysqld
 sudo systemctl enable mysqld
 Step 5 — Configure DB to work with WordPress
@@ -220,10 +240,15 @@ GRANT ALL ON wordpress.* TO 'myuser'@'<Web-Server-Private-IP-Address>';
 FLUSH PRIVILEGES;
 SHOW DATABASES;
 exit
+
+![databases](./images/webserver-datatbases.png)
+
 Step 6 — Configure WordPress to connect to remote database.
 Hint: Do not forget to open MySQL port 3306 on DB Server EC2. For extra security, you shall allow access to the DB server ONLY from your Web Server’s IP address, so in the Inbound Rule configuration specify source as /32
 
-        
+ ![database row](./images/database-row.png)
+
+ 
 
 ## Install MySQL client and test that you can connect from your Web Server to your DB server by using mysql-client
 sudo yum install mysql
@@ -233,6 +258,10 @@ Change permissions and configuration so Apache could use WordPress:
 Enable TCP port 80 in Inbound Rules configuration for your Web Server EC2 (enable from everywhere 0.0.0.0/0 or from your workstation’s IP)
 Try to access from your browser the link to your WordPress http://<Web-Server-Public-IP-Address>/wordpress/
         
+![wordpress](./images/wordpress%202.png)
+![wordpress](./images/wordpress.png)
+![wordpress](./images/wordpress3.png)
+![wordpress](./images/wordpress-complete.png)
 
 Fill out your DB credentials:
 
